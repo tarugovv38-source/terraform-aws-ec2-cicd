@@ -1,0 +1,8 @@
+# Terraform
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+*.tfplan
+
+# Chave privada — NUNCA sobe isso
+*.pem
