@@ -4,5 +4,5 @@ terraform.tfstate
 terraform.tfstate.backup
 *.tfplan
 
-# Chave privada — NUNCA sobe isso
+# Chave privada
 *.pem
