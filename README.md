@@ -11,25 +11,12 @@ Production-ready infrastructure deploying a containerized web application on AWS
 ---
 
 ## Architecture
-┌─────────────────────────────────────────────────────┐
-│                   GitHub Actions                     │
-│  push to main → build image → push to ECR           │
-└─────────────────────┬───────────────────────────────┘
-│
-▼
-┌─────────────┐    ┌──────────────┐    ┌─────────────┐
-│   Developer │───▶│  Amazon ECR  │───▶│  Amazon EC2 │
-│  (local)    │    │ (private     │    │ (Docker +   │
-│             │    │  registry)   │    │  Nginx)     │
-└─────────────┘    └──────────────┘    └─────────────┘
-│
-▼
-┌─────────────┐
-│   Browser   │
-│ (port 80)   │
-└─────────────┘
 
-All infrastructure provisioned as code with Terraform — reproducible, versionable, destroyable in one command.
+Every push to `main` triggers GitHub Actions, which builds the Docker image and pushes it to Amazon ECR. The EC2 instance pulls the image from ECR using an IAM Role — no credentials stored on the server.
+
+    Developer → GitHub Actions → Amazon ECR → Amazon EC2 → Browser
+
+All infrastructure is provisioned as code with Terraform — reproducible, versionable, and destroyable in one command.
 
 ---
 
@@ -46,66 +33,3 @@ All infrastructure provisioned as code with Terraform — reproducible, versiona
 ---
 
 ## CI/CD Pipeline
-
-Every push to `main` triggers the GitHub Actions workflow automatically:
-push to main
-└── checkout code
-└── configure AWS credentials (via repository secrets)
-└── login to Amazon ECR
-└── docker build
-└── docker push (tagged with commit SHA + latest)
-
----
-
-## Security Decisions
-
-- No credentials on EC2 — instance authenticates to ECR via IAM Role
-- `.pem` excluded from version control via `.gitignore`
-- Terraform state excluded from version control
-- Image scanning enabled on ECR push
-- Production note: static credentials should be replaced with OIDC for keyless AWS authentication
-
----
-
-## How to Deploy
-
-Requirements: Terraform >= 1.3.0, AWS CLI, Docker
-
-```bash
-# Clone
-git clone https://github.com/tarugovv38-source/terraform-aws-ec2-cicd.git
-cd terraform-aws-ec2-cicd
-
-# Provision all infrastructure
-terraform init
-terraform apply
-
-# SSH into EC2 (IP shown in terraform output)
-ssh -i meu-website-key.pem ec2-user@<PUBLIC_IP>
-
-# Pull and run container
-aws ecr get-login-password --region us-east-1 | \
-  docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
-
-docker run -d -p 80:80 --restart always \
-  <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/meu-website:latest
-
-# Destroy everything
-terraform destroy
-```
-
----
-
-## What I Learned
-
-- Provisioning AWS infrastructure with Terraform (EC2, ECR, IAM, Security Groups)
-- Containerizing applications with Docker and Nginx
-- Automating image build and push with GitHub Actions
-- IAM Roles for secure EC2-to-ECR authentication without static credentials
-- The difference between managing infrastructure manually vs as code
-
----
-
-## Tech Stack
-
-`Terraform` · `Docker` · `AWS EC2` · `AWS ECR` · `AWS IAM` · `GitHub Actions` · `Nginx` · `Amazon Linux`
